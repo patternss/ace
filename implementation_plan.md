@@ -423,6 +423,20 @@ These are not tied to a single phase — they should be addressed continuously.
 - Setup instructions always current
 - Architecture decisions documented in the spec's Decision Log
 
+### Security Hardening Checklist
+
+These are deliberately omitted during early phases (local-only, single-user) but MUST be addressed before any remote/multi-user exposure. Each item lists when it becomes relevant.
+
+- [ ] **WebSocket authentication** — Before remote access. Clients must prove identity before the server accepts messages. Token-based (e.g., pre-shared key or session token). *(Relevant: Phase 6 or when remote access is added)*
+- [ ] **TLS / encrypted transport** — Before remote access. Either terminate TLS at a reverse proxy (Tailscale, Cloudflare Tunnel, nginx) or natively in uvicorn. *(Relevant: Phase 6 or when remote access is added)*
+- [ ] **Rate limiting** — Before remote access. Prevent abuse on WebSocket and HTTP endpoints. *(Relevant: Phase 6 or when remote access is added)*
+- [ ] **Error message sanitization** — Before remote access. Error responses currently include internal details (exception messages, stack traces). Sanitize to generic messages in production mode. *(Relevant: Phase 6)*
+- [ ] **API key storage** — Currently in `.env` plaintext. Move to OS keychain or encrypted storage for production deployments. *(Relevant: Phase 6)*
+- [ ] **Dependency audits** — Run `pip audit` and `npm audit` periodically. Set up automated alerts. *(Relevant: ongoing, start by Phase 2)*
+- [ ] **Content Security Policy (CSP)** — When serving web content, set CSP headers to prevent XSS. *(Relevant: Phase 4-5, when content presentation is added)*
+- [ ] **Input sanitization on client** — The client must treat all server responses as untrusted when rendering HTML/markdown. *(Relevant: Phase 0.5, when building the chat UI)*
+- [ ] **Remote access architecture** — Decide on Tailscale (P2P, better for streaming) vs Cloudflare Tunnel vs self-hosted WireGuard vs port forwarding. Document tradeoffs. *(Relevant: Phase 6)*
+
 ---
 
 ## Phase Dependencies

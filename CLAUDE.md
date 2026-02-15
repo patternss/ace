@@ -68,7 +68,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - explain what service a component promises to deliver, what it needs and what will it return
 - be concise
 - don't explain obvious code
-- update specificaitons as you make changes - remember also to update specs when some feature is removed 
+- update specificaitons after each bigger step (like from 0.1 to 0.2)  
+- remember also to update the story.md after bigger steps
+
+important communication documents:
+- all specificaiton files
+- implementation_plan.md
+- story.md
 
 Ask yourself: Have I made it as easy as possible for other members of the project to understand how different components and the whole system works.  
 
