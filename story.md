@@ -82,3 +82,17 @@ A deliberate design choice: **the session manager has zero WebSocket awareness**
 **The model was switched to `qwen3:14b`** from `qwen3-vl:30b` for faster responses during development, and **the server port was changed to 8888** to avoid conflicts with other services commonly running on 8000.
 
 Testing confirmed all three pillars work: streaming responses arrive chunk-by-chunk, conversation context is preserved across messages on the same session, and ping/pong still works alongside the new orchestration. The server is now a functioning chat backend — the next step (Phase 0.5) is the browser UI to talk to it.
+
+## Phase 0.5 — The Svelte Client (2026-02-15)
+
+With the server streaming real LLM responses, the final piece of Phase 0 was giving users a way to actually talk to it. This phase replaced the Vite boilerplate with a working chat interface.
+
+**The architecture splits into two layers.** `websocket.ts` is a plain TypeScript `ChatSocket` class — no Svelte dependency, just callbacks for messages and state changes. It handles connecting to `/ws`, sending JSON, and auto-reconnecting with exponential backoff (1s → 2s → 4s → 30s max). On top of that, `connection.svelte.ts` wraps the socket in Svelte 5 runes (`$state`, `$derived`) to make everything reactive. The `.svelte.ts` extension is required because runes only work in files the Svelte compiler processes — a plain `.ts` file can't use `$state()`.
+
+**The store owns all chat state**: a reactive `messages` array, `connectionState` (connected/disconnected/reconnecting), and an `isStreaming` flag. Streaming logic handles the server's partial/complete protocol: `isPartial: true` chunks get appended to the current assistant message, and the final `isPartial: false` message replaces the content with the complete text. The session ID is an ephemeral `crypto.randomUUID()` — new on every page refresh, with persistence deferred to Phase 1.
+
+**Two components make up the UI.** `Chat.svelte` is the full-screen layout: a header with "ACE" and a connection status dot (green/orange/red), a scrollable message list with auto-scroll, and a text input with send button. Input disables when disconnected; send disables while streaming. `MessageBubble.svelte` renders individual messages — user messages right-aligned in blue, assistant messages left-aligned in dark gray. Content uses `{message.content}` (not `{@html}`), so everything is auto-escaped with no XSS risk.
+
+**The global CSS was stripped down** from Vite's demo theme to a minimal dark theme — just enough for the chat to look clean. The old `Counter.svelte` boilerplate and the plain `connection.ts` stub were deleted.
+
+At the end of this phase: ACE is a working text chat app. Open the browser, type a message, watch the assistant's response stream in chunk by chunk. Send another message and the assistant has full conversation context. Stop the server and the status dot turns red; restart it and the client auto-reconnects. Phase 0 is complete — everything from here is enhancement.

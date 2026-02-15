@@ -9,6 +9,7 @@ __pycache__/
 node_modules/
 dist/
 dist-ssr/
+client/README.md
 
 # Environment
 .env

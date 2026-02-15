@@ -1,7 +1,7 @@
 # ACE - Implementation Plan
 
 **Version**: 0.1.0-draft
-**Last Updated**: 2026-02-12
+**Last Updated**: 2026-02-15
 **Reference**: [General Specifications](./general_specifications.md)
 
 ---
@@ -43,36 +43,46 @@ The MVP (Phase 0) is deliberately minimal: a text-based assistant running in a b
 - [x] Basic dev tooling: linter, formatter, .gitignore, Vite dev server
 - [x] README with setup instructions
 
-**Repository Structure** (initial):
+**Repository Structure** (as of Phase 0.5):
 ```
 ace/
 ├── server/
-│   ├── main.py              # FastAPI entrypoint
-│   ├── config.py             # Configuration loading
-│   ├── session_manager.py    # Orchestration loop
+│   ├── __init__.py
+│   ├── main.py              # FastAPI entrypoint (/health, /ws)
+│   ├── config.py             # Configuration loading (config.yaml + .env)
+│   ├── connection.py          # WebSocket handler + ConnectionManager
+│   ├── protocol.py            # Message protocol models (Pydantic)
+│   ├── session_manager.py    # Orchestration loop + conversation history
 │   ├── llm/
-│   │   ├── router.py         # LLM abstraction interface
+│   │   ├── __init__.py
+│   │   ├── router.py         # LLM abstraction interface (Protocol-based)
 │   │   └── adapters/
-│   │       └── gemini.py     # First adapter
-│   └── requirements.txt
+│   │       ├── __init__.py
+│   │       └── ollama.py     # Ollama adapter (first provider)
+│   └── pyproject.toml
 ├── client/
 │   ├── src/
+│   │   ├── main.ts            # Svelte app entry point
+│   │   ├── App.svelte         # Root component (mounts Chat)
+│   │   ├── app.css            # Global dark theme
 │   │   ├── lib/
+│   │   │   ├── websocket.ts   # WebSocket transport (ChatSocket class)
 │   │   │   ├── stores/
-│   │   │   │   └── connection.ts    # WebSocket state store
-│   │   │   ├── components/
-│   │   │   │   ├── Chat.svelte      # Message list + input
-│   │   │   │   └── MessageBubble.svelte
-│   │   │   └── websocket.ts         # WebSocket client module
-│   │   ├── routes/
-│   │   │   └── +page.svelte         # Main page
-│   │   └── app.html
+│   │   │   │   └── connection.svelte.ts  # Reactive chat state (runes)
+│   │   │   └── components/
+│   │   │       ├── Chat.svelte           # Message list + input + status
+│   │   │       └── MessageBubble.svelte  # Single message bubble
+│   │   └── assets/
+│   ├── index.html
 │   ├── package.json
-│   ├── svelte.config.js
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── config.yaml               # Server configuration
-├── .env.example              # API key template
+│   ├── vite.config.ts         # Dev proxy: /ws → localhost:8888
+│   └── tsconfig.json
+├── config.yaml               # Server configuration (port, LLM provider/model)
+├── .env                      # API keys (not committed)
+├── protocol.md               # Message protocol specification
+├── general_specifications.md
+├── implementation_plan.md
+├── story.md
 └── README.md
 ```
 
@@ -96,25 +106,25 @@ ace/
 - [x] No tools, no memory persistence — just the conversation loop
 
 #### 0.5 Svelte Client
-- [ ] `Chat.svelte` component: message list + text input + send button
-- [ ] `MessageBubble.svelte` component: renders a single message (user or assistant)
-- [ ] `websocket.ts` module: WebSocket connection, send/receive, auto-reconnect
-- [ ] `connection.ts` Svelte store: reactive connection state (connected/disconnected/reconnecting)
-- [ ] Send `user.input.text` messages on submit
-- [ ] Receive and render `assistant.response.text` messages (handle streaming/partial with reactive updates)
-- [ ] Basic styling (readable, clean — nothing fancy)
-- [ ] Connection status indicator (reactive, bound to store)
+- [x] `Chat.svelte` component: message list + text input + send button
+- [x] `MessageBubble.svelte` component: renders a single message (user or assistant)
+- [x] `websocket.ts` module: WebSocket connection, send/receive, auto-reconnect
+- [x] `connection.svelte.ts` Svelte store: reactive connection state (connected/disconnected/reconnecting)
+- [x] Send `user.input.text` messages on submit
+- [x] Receive and render `assistant.response.text` messages (handle streaming/partial with reactive updates)
+- [x] Basic styling (readable, clean — nothing fancy)
+- [x] Connection status indicator (reactive, bound to store)
 
 #### 0.6 Configuration & First Run
-- [ ] Load API key from `.env`
-- [ ] Load server config from `config.yaml` (port, LLM provider, model name)
-- [ ] Dev setup: FastAPI server + Vite dev server (with proxy to API for WebSocket)
+- [x] Load API key from `.env` *(done in Phase 0.2)*
+- [x] Load server config from `config.yaml` (port, LLM provider, model name) *(done in Phase 0.2)*
+- [x] Dev setup: FastAPI server + Vite dev server (with proxy to API for WebSocket) *(done in Phase 0.1)*
 - [ ] Production build: Svelte compiles to static files, served by FastAPI
 - [ ] Startup script or instructions to run server + open client
-- [ ] Verify: type a message → see a streamed response from Gemini
+- [x] Verify: type a message → see a streamed response from LLM *(done in Phase 0.5)*
 
 ### Definition of Done
-You can open a browser, type a message, and have a streamed conversation with Gemini through the coordination server. Refreshing the page loses history (no persistence yet). The code is clean, modular, and ready for the next layer.
+You can open a browser, type a message, and have a streamed conversation with an LLM through the coordination server. Refreshing the page loses history (no persistence yet). The code is clean, modular, and ready for the next layer.
 
 ---
 
@@ -385,10 +395,10 @@ The assistant can read your email, check your calendar, find files in your Drive
 - [ ] Tool enable/disable toggles
 - [ ] System prompt editor (advanced)
 
-#### 6.6 Second LLM Provider
+#### 6.6 Additional LLM Providers
 - [ ] Add Anthropic (Claude) adapter (validates the abstraction layer works in practice)
 - [ ] Add OpenAI adapter
-- [ ] Add Ollama adapter (local model support)
+- [x] Add Ollama adapter (local model support) *(done in Phase 0.3)*
 - [ ] Fallback logic: primary → secondary → local → error message
 - [ ] User can switch providers in settings
 
@@ -434,7 +444,7 @@ These are deliberately omitted during early phases (local-only, single-user) but
 - [ ] **API key storage** — Currently in `.env` plaintext. Move to OS keychain or encrypted storage for production deployments. *(Relevant: Phase 6)*
 - [ ] **Dependency audits** — Run `pip audit` and `npm audit` periodically. Set up automated alerts. *(Relevant: ongoing, start by Phase 2)*
 - [ ] **Content Security Policy (CSP)** — When serving web content, set CSP headers to prevent XSS. *(Relevant: Phase 4-5, when content presentation is added)*
-- [ ] **Input sanitization on client** — The client must treat all server responses as untrusted when rendering HTML/markdown. *(Relevant: Phase 0.5, when building the chat UI)*
+- [x] **Input sanitization on client** — The client treats all server responses as untrusted. Uses `{message.content}` (not `{@html}`) so all content is auto-escaped. *(Addressed: Phase 0.5)*
 - [ ] **Remote access architecture** — Decide on Tailscale (P2P, better for streaming) vs Cloudflare Tunnel vs self-hosted WireGuard vs port forwarding. Document tradeoffs. *(Relevant: Phase 6)*
 
 ---

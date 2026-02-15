@@ -816,6 +816,9 @@ These are explicitly deferred but captured for future:
 | 2026-02-15 | User message appended before LLM call | If LLM fails, user message is still in history — matches chat UX expectations. Assistant message appended only after full stream completes. |
 | 2026-02-15 | Port 8888 for development server | Avoids conflict with other services commonly running on 8000/8080. |
 | 2026-02-15 | Switched default model to qwen3:14b | Faster responses during development than qwen3-vl:30b. Model is configurable in config.yaml. |
+| 2026-02-15 | `.svelte.ts` for reactive stores (not plain `.ts`) | Svelte 5 runes (`$state`, `$derived`) only work in files processed by the Svelte compiler. Renamed `connection.ts` → `connection.svelte.ts`. |
+| 2026-02-15 | `ChatSocket` class with callbacks (no Svelte dependency) | Transport layer is framework-agnostic. Svelte reactivity lives in the store; WebSocket module is plain TypeScript. |
+| 2026-02-15 | Ephemeral session ID per page load | `crypto.randomUUID()` on module init. No persistence — new session on refresh. Persistence deferred to Phase 1. |
 
 ---
 
