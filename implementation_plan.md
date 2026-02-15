@@ -457,7 +457,7 @@ These don't need answers before starting Phase 0, but should be resolved before 
 | Which search API for web search tool? | Phase 2 | SearXNG (self-hosted, free) vs. Tavily/Brave (API, paid). Depends on self-hosting appetite. |
 | How to handle LLM context window limits? | Phase 1 | Conversation summarization? Sliding window? Needs experimentation. |
 | How are expert personas structured? | Phase 6+ | Deferred per spec. Needs design work before implementation. |
-| SvelteKit or plain Svelte + Vite? | Phase 0 | SvelteKit adds routing, SSR, and file-based routes. May be overkill for a SPA, but its file structure is clean. Decide during project setup. |
+| ~~SvelteKit or plain Svelte + Vite?~~ | Phase 0 | **Decided: Plain Svelte + Vite.** SvelteKit's routing and SSR are unnecessary for a SPA. |
 
 ---
 

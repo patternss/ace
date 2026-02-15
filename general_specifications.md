@@ -804,6 +804,10 @@ These are explicitly deferred but captured for future:
 | 2026-02-12 | Voice interruption is day-1, not research | Basic stop-on-speech is a Phase 1 requirement; advanced handling is research |
 | 2026-02-12 | Svelte for client framework | Compiles to minimal JS (Pi-friendly), built-in reactivity and transitions, TypeScript support. Chosen upfront to avoid vanilla-to-framework migration cost. |
 | 2026-02-12 | Python + FastAPI for server | First-class LLM SDK support, native WebSocket/async, lightweight enough for Pi |
+| 2026-02-15 | Plain Svelte + Vite (not SvelteKit) | SvelteKit's file-based routing and SSR are unnecessary for a SPA. Plain Svelte + Vite is simpler and sufficient. |
+| 2026-02-15 | `pyproject.toml` only (no requirements.txt) | Modern standard, consolidates metadata + dependencies + tool config in one file |
+| 2026-02-15 | ESLint 9 flat config + Prettier for client | ESLint 9 flat config is the current standard; Prettier with svelte plugin for consistent formatting |
+| 2026-02-15 | Ruff for Python linting + formatting | Single tool replaces flake8 + black + isort. Fast, modern, zero-config. |
 
 ---
 
