@@ -119,8 +119,8 @@ ace/
 - [x] Load API key from `.env` *(done in Phase 0.2)*
 - [x] Load server config from `config.yaml` (port, LLM provider, model name) *(done in Phase 0.2)*
 - [x] Dev setup: FastAPI server + Vite dev server (with proxy to API for WebSocket) *(done in Phase 0.1)*
-- [ ] Production build: Svelte compiles to static files, served by FastAPI
-- [ ] Startup script or instructions to run server + open client
+- [x] Production build: Svelte compiles to static files, served by FastAPI
+- [x] Startup script or instructions to run server + open client
 - [x] Verify: type a message → see a streamed response from LLM *(done in Phase 0.5)*
 
 ### Definition of Done

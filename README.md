@@ -32,19 +32,36 @@ npm install
 
 ## Development
 
-Start both processes:
+Start both processes (two terminals):
 
 ```bash
 # Terminal 1: Server (run from project root)
 source server/.venv/bin/activate
-uvicorn server.main:app --reload
+uvicorn server.main:app --reload --port 8888
 
-# Terminal 2: Client
+# Terminal 2: Client dev server
 cd client
 npm run dev
 ```
 
-The Vite dev server (default: http://localhost:5173) proxies WebSocket and API requests to the FastAPI server (default: http://localhost:8000).
+The Vite dev server (http://localhost:5173) proxies `/ws` to the FastAPI server (http://localhost:8888).
+
+## Production
+
+Build the client and run the server — no Vite dev server needed:
+
+```bash
+# Build the Svelte client to static files
+cd client
+npm run build
+
+# Start the server (serves the built client at /)
+cd ..
+source server/.venv/bin/activate
+uvicorn server.main:app --port 8888
+```
+
+Open http://localhost:8888 — FastAPI serves the chat UI and handles WebSocket connections.
 
 ## Linting & Formatting
 

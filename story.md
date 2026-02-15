@@ -95,4 +95,14 @@ With the server streaming real LLM responses, the final piece of Phase 0 was giv
 
 **The global CSS was stripped down** from Vite's demo theme to a minimal dark theme — just enough for the chat to look clean. The old `Counter.svelte` boilerplate and the plain `connection.ts` stub were deleted.
 
-At the end of this phase: ACE is a working text chat app. Open the browser, type a message, watch the assistant's response stream in chunk by chunk. Send another message and the assistant has full conversation context. Stop the server and the status dot turns red; restart it and the client auto-reconnects. Phase 0 is complete — everything from here is enhancement.
+At the end of this phase: ACE is a working text chat app. Open the browser, type a message, watch the assistant's response stream in chunk by chunk. Send another message and the assistant has full conversation context. Stop the server and the status dot turns red; restart it and the client auto-reconnects.
+
+## Phase 0.6 — Production Build (2026-02-15)
+
+The last piece of Phase 0: making ACE deployable as a single process. During development you need two terminals — Vite for the client, uvicorn for the server. In production, that's unnecessary overhead.
+
+The fix is simple: `npm run build` compiles the Svelte app into static files in `client/dist/`, and FastAPI serves them using Starlette's built-in `StaticFiles` middleware. The mount goes at the bottom of `main.py`, after all route definitions, so `/health` and `/ws` aren't shadowed. The `html=True` flag enables SPA fallback — any path that doesn't match a real file serves `index.html`, letting client-side routing work.
+
+One important detail: the static mount only activates if `client/dist/` exists. During development (no build), the server starts fine without it. No crash, no error, no config flag needed.
+
+With this, Phase 0 is complete. ACE is a working chat app that can be built and run with two commands: `npm run build` and `uvicorn server.main:app`. Everything from here is enhancement — memory, tools, voice, and eventually the face.

@@ -28,3 +28,6 @@ Thumbs.db
 
 # Build
 *.log
+
+# Study material (local reference, not part of the project)
+study_material/
