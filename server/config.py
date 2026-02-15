@@ -10,8 +10,9 @@ Usage:
     config = get_config()
     config.server.host  # "0.0.0.0"
     config.server.port  # 8000
-    config.llm.provider # "gemini"
-    config.llm.api_key  # from .env GEMINI_API_KEY
+    config.llm.provider # "ollama"
+    config.llm.host     # "http://localhost:11434"
+    config.llm.api_key  # optional, for cloud providers
 """
 
 import os
@@ -34,7 +35,8 @@ class ServerConfig:
 class LLMConfig:
     provider: str
     model: str
-    api_key: str
+    host: str = ""
+    api_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -62,11 +64,9 @@ def load_config() -> Config:
     with open(config_path) as f:
         raw = yaml.safe_load(f)
 
+    llm_raw = raw["llm"]
     api_key = os.environ.get("GEMINI_API_KEY", "")
-    if not api_key:
-        raise ValueError(
-            "GEMINI_API_KEY not set. Copy .env.example to .env and add your key."
-        )
+    llm_host = llm_raw.get("host", os.environ.get("OLLAMA_HOST", ""))
 
     return Config(
         server=ServerConfig(
@@ -74,8 +74,9 @@ def load_config() -> Config:
             port=raw["server"]["port"],
         ),
         llm=LLMConfig(
-            provider=raw["llm"]["provider"],
-            model=raw["llm"]["model"],
+            provider=llm_raw["provider"],
+            model=llm_raw["model"],
+            host=llm_host,
             api_key=api_key,
         ),
     )

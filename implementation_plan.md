@@ -31,17 +31,17 @@ The MVP (Phase 0) is deliberately minimal: a text-based assistant running in a b
 | **Server** | Python + FastAPI | Best LLM SDK ecosystem (Anthropic, OpenAI, Google all have first-class Python SDKs). FastAPI has native WebSocket support, async, and is lightweight enough for a Pi. |
 | **Client** | Svelte | Compiles to minimal JS (small bundles, ideal for Pi-served static files). Built-in reactivity for streaming responses and real-time state. Built-in transitions/animations for face states and view switching. Simple component model that scales from text chat to full UI. |
 | **Communication** | WebSocket | As specified. Bidirectional, real-time. |
-| **First LLM provider** | Google (Gemini) | Pick one to start. The abstraction layer means swapping is cheap later. Google has a generous free tier and a first-class Python SDK. |
+| **First LLM provider** | Ollama (local) | Start with a local model — free, no API key, no latency to cloud. The abstraction layer means swapping to Gemini/Claude is cheap later. |
 | **Configuration** | `.env` file + `config.yaml` | API keys in `.env` (never committed). Server settings in YAML. Simple, no database needed yet. |
 
 ### Tasks
 
 #### 0.1 Project Setup
-- [ ] Initialize repository structure
-- [ ] Set up Python project (pyproject.toml, virtual env, dependencies)
-- [ ] Set up Svelte project (`npm create svelte@latest`, TypeScript enabled)
-- [ ] Basic dev tooling: linter, formatter, .gitignore, Vite dev server
-- [ ] README with setup instructions
+- [x] Initialize repository structure
+- [x] Set up Python project (pyproject.toml, virtual env, dependencies)
+- [x] Set up Svelte project (plain Svelte + Vite, TypeScript enabled)
+- [x] Basic dev tooling: linter, formatter, .gitignore, Vite dev server
+- [x] README with setup instructions
 
 **Repository Structure** (initial):
 ```
@@ -77,16 +77,16 @@ ace/
 ```
 
 #### 0.2 WebSocket Server
-- [ ] FastAPI app with WebSocket endpoint (`/ws`)
-- [ ] Connection lifecycle: accept, receive messages, send messages, disconnect
-- [ ] Message format: JSON with `type` and `payload` (matching the draft protocol)
-- [ ] Basic error handling (malformed messages, disconnections)
+- [x] FastAPI app with WebSocket endpoint (`/ws`)
+- [x] Connection lifecycle: accept, receive messages, send messages, disconnect
+- [x] Message format: JSON with `type` and `payload` (matching the draft protocol)
+- [x] Basic error handling (malformed messages, disconnections)
 
 #### 0.3 LLM Router + First Adapter
-- [ ] Define the LLM interface: `chat(messages) → response`, `stream(messages) → chunks`
-- [ ] Implement Google Gemini adapter using the official SDK (`google-genai`)
-- [ ] Router that loads the configured adapter
-- [ ] Streaming support from day 1 (stream partial responses to the client)
+- [x] Define the LLM interface: `chat(messages) → response`, `stream(messages) → chunks`
+- [x] Implement Ollama adapter using the official SDK (`ollama`)
+- [x] Router that loads the configured adapter
+- [x] Streaming support from day 1 (stream partial responses to the client)
 
 #### 0.4 Orchestration Loop (Minimal)
 - [ ] Session Manager receives `user.input.text` message

@@ -808,6 +808,10 @@ These are explicitly deferred but captured for future:
 | 2026-02-15 | `pyproject.toml` only (no requirements.txt) | Modern standard, consolidates metadata + dependencies + tool config in one file |
 | 2026-02-15 | ESLint 9 flat config + Prettier for client | ESLint 9 flat config is the current standard; Prettier with svelte plugin for consistent formatting |
 | 2026-02-15 | Ruff for Python linting + formatting | Single tool replaces flake8 + black + isort. Fast, modern, zero-config. |
+| 2026-02-15 | Ollama as first LLM provider (instead of Gemini) | Free, local, no API key needed — better for development. The LLM router abstraction makes swapping providers trivial; Gemini/Claude adapters added later. |
+| 2026-02-15 | `typing.Protocol` for LLM adapter interface | Adapters conform to interface shape without inheriting from a base class. Lighter coupling than ABC. |
+| 2026-02-15 | Async-only LLM interface | WebSocket handler and Ollama SDK are both async. No sync variants needed — would be dead code. |
+| 2026-02-15 | Standard `Message(role, content)` format for router | Adapters convert to provider-specific formats internally. Callers never see provider types. |
 
 ---
 
