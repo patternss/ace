@@ -56,6 +56,7 @@ Wire format uses **camelCase** (`sessionId`, `isPartial`). The Python server use
 |------|-------------|
 | `INVALID_MESSAGE` | Malformed JSON or unknown message type |
 | `INVALID_PAYLOAD` | Message type recognized but payload validation failed |
+| `LLM_ERROR` | LLM provider returned an error or is unreachable |
 
 ## Implementation
 

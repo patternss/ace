@@ -89,11 +89,11 @@ ace/
 - [x] Streaming support from day 1 (stream partial responses to the client)
 
 #### 0.4 Orchestration Loop (Minimal)
-- [ ] Session Manager receives `user.input.text` message
-- [ ] Appends to conversation history (in-memory list for now)
-- [ ] Sends history to LLM via Router
-- [ ] Streams response back to client as `assistant.response.text` (with `isPartial` flag)
-- [ ] No tools, no memory persistence — just the conversation loop
+- [x] Session Manager receives `user.input.text` message
+- [x] Appends to conversation history (in-memory list for now)
+- [x] Sends history to LLM via Router
+- [x] Streams response back to client as `assistant.response.text` (with `isPartial` flag)
+- [x] No tools, no memory persistence — just the conversation loop
 
 #### 0.5 Svelte Client
 - [ ] `Chat.svelte` component: message list + text input + send button

@@ -6,11 +6,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/ws": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8888",
         ws: true,
       },
       "/api": {
-        target: "http://localhost:8000",
+        target: "http://localhost:8888",
       },
     },
   },

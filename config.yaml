@@ -2,9 +2,9 @@
 
 server:
   host: "0.0.0.0"
-  port: 8000
+  port: 8888
 
 llm:
   provider: "ollama"
-  model: "qwen3-vl:30b"
+  model: "qwen3:14b"
   # host: "http://localhost:11434"  # uncomment to override default

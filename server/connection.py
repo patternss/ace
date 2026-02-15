@@ -3,10 +3,7 @@ WebSocket connection handler.
 
 Manages WebSocket connections: accept, receive/parse messages,
 dispatch responses, handle disconnections. Does NOT contain
-business logic — delegates to the session manager (Phase 0.4+).
-
-For now, echoes user messages back as assistant responses
-to prove the WebSocket round-trip works.
+business logic — delegates to the session manager.
 
 Usage:
     # In main.py:
@@ -33,6 +30,7 @@ from server.protocol import (
     UserInputText,
     parse_incoming,
 )
+from server.session_manager import handle_user_message
 
 logger = logging.getLogger(__name__)
 
@@ -94,20 +92,47 @@ async def handle_message(
 ) -> None:
     """Dispatch a parsed message to the appropriate handler.
 
-    Phase 0.2: echoes user text back. Phase 0.4 will replace this
-    with the real orchestration loop.
+    For user text: streams LLM response chunks as partial messages,
+    then sends a final complete message. Catches LLM errors and
+    sends them as error messages without dropping the connection.
     """
     if isinstance(message, ConnectionPing):
         await manager.send(websocket, ConnectionPong())
     elif isinstance(message, UserInputText):
-        # Placeholder echo — replaced by LLM call in Phase 0.4
-        await manager.send(
-            websocket,
-            AssistantResponseText(
-                payload=TextResponsePayload(
-                    text=f"Echo: {message.payload.text}",
-                    is_partial=False,
-                    session_id=message.payload.session_id,
+        sid = message.payload.session_id
+        text = message.payload.text
+        try:
+            full_text = ""
+            async for chunk in handle_user_message(sid, text):
+                full_text += chunk
+                await manager.send(
+                    websocket,
+                    AssistantResponseText(
+                        payload=TextResponsePayload(
+                            text=chunk,
+                            is_partial=True,
+                            session_id=sid,
+                        )
+                    ),
                 )
-            ),
-        )
+            await manager.send(
+                websocket,
+                AssistantResponseText(
+                    payload=TextResponsePayload(
+                        text=full_text,
+                        is_partial=False,
+                        session_id=sid,
+                    )
+                ),
+            )
+        except Exception:
+            logger.exception("LLM error for session %s", sid)
+            await manager.send(
+                websocket,
+                ErrorMessage(
+                    payload=ErrorPayload(
+                        code="LLM_ERROR",
+                        message="Failed to get LLM response",
+                    )
+                ),
+            )

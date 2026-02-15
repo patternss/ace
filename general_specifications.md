@@ -812,6 +812,10 @@ These are explicitly deferred but captured for future:
 | 2026-02-15 | `typing.Protocol` for LLM adapter interface | Adapters conform to interface shape without inheriting from a base class. Lighter coupling than ABC. |
 | 2026-02-15 | Async-only LLM interface | WebSocket handler and Ollama SDK are both async. No sync variants needed — would be dead code. |
 | 2026-02-15 | Standard `Message(role, content)` format for router | Adapters convert to provider-specific formats internally. Callers never see provider types. |
+| 2026-02-15 | Session manager has zero WebSocket awareness | Takes text in, yields chunks out. Connection layer wraps in protocol messages. Clean separation of transport and logic. |
+| 2026-02-15 | User message appended before LLM call | If LLM fails, user message is still in history — matches chat UX expectations. Assistant message appended only after full stream completes. |
+| 2026-02-15 | Port 8888 for development server | Avoids conflict with other services commonly running on 8000/8080. |
+| 2026-02-15 | Switched default model to qwen3:14b | Faster responses during development than qwen3-vl:30b. Model is configurable in config.yaml. |
 
 ---
 

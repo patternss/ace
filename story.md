@@ -68,3 +68,17 @@ Now the server needed a brain. The LLM router is the abstraction that lets the r
 **Config was updated** to make `api_key` and `host` optional fields — Ollama doesn't need an API key, and defaults to `localhost:11434`. The Gemini adapter stub remains for Phase 6.
 
 At the end of this phase: the router can be called with a list of messages and get a response from a local Ollama model, both as a complete response and as a stream of chunks. The WebSocket handler still echoes — Phase 0.4 will wire the router into the orchestration loop and make it all work end-to-end.
+
+## Phase 0.4 — The Orchestration Loop (2026-02-15)
+
+This is where ACE stopped being a skeleton and started being a conversational assistant. The goal: wire the LLM router (Phase 0.3) into the WebSocket handler (Phase 0.2) so that when a user sends a message, they get a real streamed response from the language model.
+
+**The session manager** (`server/session_manager.py`) replaced its stub with two responsibilities: conversation history and LLM orchestration. History is a simple in-memory dict mapping session IDs to message lists — no persistence yet (that's Phase 1). The key function, `handle_user_message()`, is an async generator: it appends the user message to history, streams from the LLM router, yields each chunk, and after the stream completes, appends the full assistant response to history.
+
+A deliberate design choice: **the session manager has zero WebSocket awareness**. It takes a session ID and text in, yields string chunks out. The connection layer decides how to wrap those chunks in protocol messages. This keeps transport and logic cleanly separated — the session manager is equally usable from a WebSocket handler, an HTTP endpoint, or a test harness.
+
+**The connection handler** (`server/connection.py`) got its echo logic replaced. Now when a `user.input.text` arrives, the handler iterates over the session manager's stream: each chunk is sent as an `assistant.response.text` with `isPartial: true`, and after the stream ends, a final message with `isPartial: false` carries the full assembled response. LLM errors are caught and sent as `ErrorMessage` with a new `LLM_ERROR` code — the connection stays alive so the user can try again.
+
+**The model was switched to `qwen3:14b`** from `qwen3-vl:30b` for faster responses during development, and **the server port was changed to 8888** to avoid conflicts with other services commonly running on 8000.
+
+Testing confirmed all three pillars work: streaming responses arrive chunk-by-chunk, conversation context is preserved across messages on the same session, and ping/pong still works alongside the new orchestration. The server is now a functioning chat backend — the next step (Phase 0.5) is the browser UI to talk to it.
