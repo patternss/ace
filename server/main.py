@@ -6,14 +6,26 @@ In production, also serves the built Svelte client from client/dist/.
 Run with: uvicorn server.main:app --reload
 """
 
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket
 from fastapi.staticfiles import StaticFiles
 
 from server.connection import websocket_endpoint
+from server.database import close_db, init_db
 
-app = FastAPI(title="ACE Coordination Server")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Startup: init database. Shutdown: close database."""
+    await init_db()
+    yield
+    await close_db()
+
+
+app = FastAPI(title="ACE Coordination Server", lifespan=lifespan)
 
 
 @app.get("/health")

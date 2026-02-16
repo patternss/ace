@@ -13,7 +13,7 @@
  *     onStateChange: (state) => console.log(state),
  *   });
  *   socket.connect();
- *   socket.send({ type: "user.input.text", payload: { text: "hi", sessionId: "abc" } });
+ *   socket.send({ type: "user.input.text", payload: { text: "hi" } });
  *   socket.disconnect();
  */
 
@@ -23,7 +23,6 @@ export type ConnectionState = "connected" | "disconnected" | "reconnecting";
 
 export interface TextInputPayload {
   text: string;
-  sessionId: string;
 }
 
 export interface UserInputText {
@@ -31,15 +30,32 @@ export interface UserInputText {
   payload: TextInputPayload;
 }
 
+export interface HistoryRequestMessage {
+  type: "history.request";
+}
+
 export interface TextResponsePayload {
   text: string;
   isPartial: boolean;
-  sessionId: string;
 }
 
 export interface AssistantResponseText {
   type: "assistant.response.text";
   payload: TextResponsePayload;
+}
+
+export interface HistoryMessageItem {
+  role: string;
+  content: string;
+}
+
+export interface HistoryResponsePayload {
+  messages: HistoryMessageItem[];
+}
+
+export interface HistoryResponseMessage {
+  type: "history.response";
+  payload: HistoryResponsePayload;
 }
 
 export interface ErrorPayload {
@@ -57,9 +73,10 @@ export interface ConnectionPong {
   type: "connection.pong";
 }
 
-export type OutgoingMessage = UserInputText;
+export type OutgoingMessage = UserInputText | HistoryRequestMessage;
 export type IncomingMessage =
   | AssistantResponseText
+  | HistoryResponseMessage
   | ErrorMessage
   | ConnectionPong;
 

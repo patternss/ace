@@ -29,5 +29,8 @@ Thumbs.db
 # Build
 *.log
 
+# Data (SQLite database, created at runtime)
+data/
+
 # Study material (local reference, not part of the project)
 study_material/

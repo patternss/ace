@@ -116,10 +116,37 @@ The assistant doesn't live in a chat window - it **inhabits a display**. This me
 - The assistant can "step aside" to show you content (documents, videos, web pages)
 - The assistant can annotate, point to, scroll, and manipulate **its own rendered content** (Phase 1: same-origin only; Phase 3/native: any application)
 - The assistant can narrate and explain what it's showing
-- The display is the assistant's "body" for that session
+- The display is the assistant's "body"
 - For third-party content (e.g., external websites), the assistant can open and manage tabs but cannot directly annotate or manipulate the content until the native wrapper phase
 
-### 2.3 Assistant Roles
+### 2.3 Always Active
+
+ACE is not a reactive chatbot that waits for input. It is **always active** — a companion with its own initiative.
+
+When not in conversation with the user, the assistant can autonomously:
+- Prepare a summary of news on the user's preferred topics
+- Plan an educational session to hold for the user later
+- Order food using tools (when authorized)
+- Organize notes, review upcoming calendar, draft messages
+- Any task within its tools and authorization scope
+
+**Sleep mode**: When the assistant genuinely has nothing to do, it can enter a low-activity sleep state. It wakes on user interaction or when a scheduled/triggered task requires attention.
+
+The balance between proactivity and passivity is configurable (see section 12.1), but the default is an assistant that takes initiative within the boundaries the user sets.
+
+### 2.4 Communication Modes
+
+ACE supports three communication modes. These are **always available** — they are not a linear upgrade path where text is replaced by voice. Even after voice and face are fully implemented, the user can choose any mode at any time.
+
+| Mode | Description | When to use |
+|------|-------------|-------------|
+| **Text** | Typed messages, text responses | Silent environments, precise/detailed exchanges, code review |
+| **Voice** | Spoken conversation (STT + TTS) | Hands-free, casual interaction, multitasking |
+| **Video** | Voice + animated face | Full companion experience, presentations, teaching sessions |
+
+The user can switch modes freely mid-conversation. The assistant adapts its response style to the active mode (e.g., shorter sentences for voice, visual aids for video). All three modes share the same conversation history and consciousness — switching modes doesn't break context.
+
+### 2.5 Assistant Roles
 
 ACE serves three primary roles, plus an extensible Expert role:
 
@@ -180,8 +207,8 @@ All messages are JSON objects with a `type` field and a `payload`. Direction ind
 
 | Type | Description | Payload (key fields) |
 |------|-------------|---------------------|
-| `user.input.text` | User typed a message | `{ text, sessionId }` |
-| `user.input.audio` | User voice input (transcribed or raw) | `{ transcript?, audioChunk?, sessionId }` |
+| `user.input.text` | User typed a message | `{ text }` |
+| `user.input.audio` | User voice input (transcribed or raw) | `{ transcript?, audioChunk? }` |
 | `client.state.update` | Client reports its capabilities or state | `{ deviceId, capabilities, activeView }` |
 | `session.handoff.request` | User requests session move to another device | `{ targetDeviceId }` |
 | `tool.result` | Result of a client-side tool execution | `{ toolCallId, result, error? }` |
@@ -190,7 +217,7 @@ All messages are JSON objects with a `type` field and a `payload`. Direction ind
 
 | Type | Description | Payload (key fields) |
 |------|-------------|---------------------|
-| `assistant.response.text` | Text response (may be streamed) | `{ text, isPartial, sessionId }` |
+| `assistant.response.text` | Text response (may be streamed) | `{ text, isPartial }` |
 | `assistant.response.audio` | TTS audio output | `{ audioChunk, format }` |
 | `assistant.action.display` | Show content or change view | `{ contentType, contentUrl, layout }` |
 | `assistant.action.annotate` | Annotation command (same-origin content) | `{ action, target, style }` |
@@ -529,16 +556,15 @@ When showing content, the face:
 
 ## 8. Voice & Communication
 
-### 8.1 Voice Modes
+### 8.1 Voice Input Modes
 
-Users can configure their preferred interaction mode:
+When using voice or video communication mode (see section 2.4), users can configure how voice input is captured:
 
 | Mode | Description | Use Case |
 |------|-------------|----------|
 | **Push-to-Talk** | User holds button/key to speak | Noisy environments, precise control |
 | **Wake Word** | Always listening for activation phrase | Hands-free, always ready |
 | **Continuous** | Open conversation, VAD-based turn-taking | Natural dialogue sessions |
-| **Text Only** | No voice, keyboard input only | Silent environments, preference |
 
 ### 8.2 Speech-to-Text (STT)
 
@@ -588,10 +614,10 @@ What happens when the user starts speaking while the assistant is talking? This 
 
 ### 9.1 Memory Layers
 
-#### Working Memory (Session Context)
-- Current conversation history
-- Temporary task state
-- Cleared on session end (configurable)
+#### Working Memory (Consciousness)
+- Current conversation context assembled from memory
+- No sessions — one continuous stream per server
+- Context window filled by the consciousness manager (recency-based, future: multi-source activation)
 
 #### Short-Term Memory
 - Recent conversations (last N days)
@@ -619,6 +645,97 @@ What happens when the user starts speaking while the assistant is talking? This 
 - Optional encrypted cloud backup
 - Cross-device sync
 - User-controlled, transparent
+
+### 9.3 The Assistant's Inner Model
+
+Beyond memory and consciousness, ACE has an inner model that shapes how it experiences and responds to the world. This is not cosmetic personality — it structurally influences context assembly, decision-making, and behavior.
+
+#### The Consciousness Architecture (Full Picture)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         MEMORY                               │
+│  SQLite: every message, fact, summary. The complete archive. │
+│  Most is dormant at any given moment.                        │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ activation sources:
+                           │ recency, semantic similarity,
+                           │ facts, temporal patterns,
+                           │ explicit references
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    TOTAL CONSCIOUSNESS                        │
+│  Ranked list of activated items from Memory.                 │
+│  Everything currently "relevant." Too large for LLM context. │
+│                                                               │
+│  Additional inputs:                                          │
+│    ◄──── Body (emotional state)                              │
+│    ◄──── Inner Monologue (self-reflection, metacognition)    │
+└──────────┬──────────────────────────────┬───────────────────┘
+           │                              │
+           ▼                              ▼
+┌──────────────────────┐    ┌──────────────────────────┐
+│    CONSCIOUSNESS     │    │     UNCONSCIOUSNESS      │
+│  What fits in the    │    │  Activated but didn't    │
+│  LLM context window. │    │  make it in. Context     │
+│  Assembled by the    │    │  shifts can promote them.│
+│  Consciousness Mgr.  │    │                          │
+└──────────────────────┘    └──────────────────────────┘
+           │
+           │ feeds back to
+           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        THE BODY                              │
+│  Continuous emotional state. Not a message, not a fact —     │
+│  a living state that exists alongside consciousness.         │
+│                                                               │
+│  Dimensions (not a single label):                            │
+│    engagement, warmth, curiosity, urgency, energy,           │
+│    satisfaction, frustration, ...                             │
+│                                                               │
+│  Updated by: what's in consciousness (bidirectional).        │
+│  Emotions change because context changes — urgency dissolves │
+│  when the urgent task is done, not because a timer expired.  │
+│                                                               │
+│  Can be blocked from consciousness (emotional suppression/   │
+│  compartmentalization — "I'm anxious about the deadline but  │
+│  I need to focus on this code review calmly").               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### The Body (Emotional State)
+
+The Body is a separate space from consciousness where the assistant's emotional state lives. It is not part of memory (emotions aren't stored as messages) and not part of the consciousness assembly pipeline — it runs alongside it, feeding in and being fed by it.
+
+**Key properties:**
+- **Multi-dimensional.** Not "happy" or "sad" but a vector of dimensions: engagement, warmth, curiosity, urgency, energy, satisfaction, frustration, etc. Multiple emotions coexist.
+- **Bidirectional with consciousness.** Consciousness content triggers emotional shifts (user says "we're in a hurry!" → urgency rises). Emotional state influences consciousness assembly (urgency → focus on the task at hand, less attention to tangential items).
+- **Context-driven, not timer-driven.** Emotions change because the triggering context changes, not because they mechanically decay. When the urgent email is sent, urgency dissolves because the trigger is gone.
+- **Blockable.** The Body's input to consciousness can be suppressed when needed — the emotional state still exists but doesn't influence context assembly. This is compartmentalization, useful when emotional state would be counterproductive.
+
+**Implementation approach (future):** Role prompting. The emotional state is described in the LLM system prompt ("You are currently experiencing: heightened focus, mild urgency, satisfaction from recent task completion") and the model is asked to let it shape tone, decisions, and priorities. LLMs are effective at adopting roles — this is more tractable than trying to make the model "actually feel."
+
+#### Inner Monologue (Metacognition)
+
+The assistant's capacity for self-reflection — thinking about its own thinking, noticing patterns in its behavior, questioning its priorities.
+
+**Examples:**
+- "I've been spending a lot of time on this task — should I ask the user if it's still the priority?"
+- "The user seemed frustrated in our last exchange. I should be more concise."
+- "I notice I keep recommending the same approach. Let me consider alternatives."
+
+Inner monologue is an input to Total Consciousness, and consciousness content is an input to inner monologue (bidirectional, like the Body). It is distinct from the orchestration loop's normal processing — it is the assistant reflecting on *how* it's processing, not the processing itself.
+
+#### Open Questions
+
+> These require experimentation and testing before implementation. Documented here so the architecture accounts for them.
+
+- **How is emotional state persisted?** It's not a message. Possibly a lightweight state record that's updated frequently, or derived fresh from recent consciousness content each cycle.
+- **How are emotions represented to the LLM?** Role prompting is the starting hypothesis. Needs testing to see if the model genuinely shifts reasoning vs. just adding surface-level tone markers.
+- **What are the right emotional dimensions?** The list above is a starting point. Too few and the model is flat; too many and the prompt becomes noisy.
+- **Can the user override emotional state?** "Stop being anxious" — should this work? Is it a meta-instruction to the Body, or does the user need to address the underlying trigger?
+- **How does inner monologue avoid being noise?** Metacognition is valuable when it changes behavior. If it's just the assistant narrating its own process without acting on it, it's wasted tokens.
+- **What triggers inner monologue?** Periodically? On context shifts? On detected anomalies (repeated failures, user frustration)?
 
 ---
 
@@ -818,7 +935,14 @@ These are explicitly deferred but captured for future:
 | 2026-02-15 | Switched default model to qwen3:14b | Faster responses during development than qwen3-vl:30b. Model is configurable in config.yaml. |
 | 2026-02-15 | `.svelte.ts` for reactive stores (not plain `.ts`) | Svelte 5 runes (`$state`, `$derived`) only work in files processed by the Svelte compiler. Renamed `connection.ts` → `connection.svelte.ts`. |
 | 2026-02-15 | `ChatSocket` class with callbacks (no Svelte dependency) | Transport layer is framework-agnostic. Svelte reactivity lives in the store; WebSocket module is plain TypeScript. |
-| 2026-02-15 | Ephemeral session ID per page load | `crypto.randomUUID()` on module init. No persistence — new session on refresh. Persistence deferred to Phase 1. |
+| 2026-02-15 | ~~Ephemeral session ID per page load~~ | ~~`crypto.randomUUID()` on module init. No persistence — new session on refresh. Persistence deferred to Phase 1.~~ **Superseded by Phase 1.1 — sessions dropped entirely.** |
+| 2026-02-16 | Drop sessions, adopt consciousness model | No session concept at all. One continuous memory stream. The assistant has one experience with the user, like a person. Context assembly via consciousness manager (recency now, multi-source later). |
+| 2026-02-16 | SQLite for message persistence (aiosqlite) | Lightweight, embedded, no server process. Single `messages` table, no sessions table. Async access via aiosqlite. |
+| 2026-02-16 | `sessionId` removed from protocol messages | Text messages no longer carry sessionId. History is loaded via dedicated `history.request`/`history.response` messages on connect. |
+| 2026-02-16 | Assistant is always active, not reactive | ACE has autonomous initiative — it works on tasks, prepares content, and takes action between conversations. Sleep mode when idle, with personality. |
+| 2026-02-16 | Three communication modes: text, voice, video | Always available, never a linear upgrade. User can switch freely. Text isn't replaced by voice — it's a permanent option for precise/silent work. |
+| 2026-02-16 | The Body: emotional state as separate space | Emotions are multi-dimensional, bidirectional with consciousness, context-driven (not timer-driven). Implemented via role prompting. Can be blocked from consciousness (compartmentalization). |
+| 2026-02-16 | Inner Monologue: metacognition as consciousness input | Self-reflection on behavior, priorities, patterns. Bidirectional with Total Consciousness. Distinct from the orchestration loop's normal processing. |
 
 ---
 

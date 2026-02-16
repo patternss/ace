@@ -25,12 +25,16 @@ from server.protocol import (
     ConnectionPong,
     ErrorMessage,
     ErrorPayload,
+    HistoryMessage,
+    HistoryRequest,
+    HistoryResponse,
+    HistoryResponsePayload,
     ProtocolError,
     TextResponsePayload,
     UserInputText,
     parse_incoming,
 )
-from server.session_manager import handle_user_message
+from server.session_manager import get_recent_history, handle_user_message
 
 logger = logging.getLogger(__name__)
 
@@ -88,22 +92,37 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 
 async def handle_message(
-    websocket: WebSocket, message: UserInputText | ConnectionPing
+    websocket: WebSocket,
+    message: UserInputText | ConnectionPing | HistoryRequest,
 ) -> None:
     """Dispatch a parsed message to the appropriate handler.
 
     For user text: streams LLM response chunks as partial messages,
     then sends a final complete message. Catches LLM errors and
     sends them as error messages without dropping the connection.
+
+    For history request: loads recent messages from DB and sends them.
     """
     if isinstance(message, ConnectionPing):
         await manager.send(websocket, ConnectionPong())
+    elif isinstance(message, HistoryRequest):
+        history = await get_recent_history()
+        await manager.send(
+            websocket,
+            HistoryResponse(
+                payload=HistoryResponsePayload(
+                    messages=[
+                        HistoryMessage(role=msg.role, content=msg.content)
+                        for msg in history
+                    ]
+                )
+            ),
+        )
     elif isinstance(message, UserInputText):
-        sid = message.payload.session_id
         text = message.payload.text
         try:
             full_text = ""
-            async for chunk in handle_user_message(sid, text):
+            async for chunk in handle_user_message(text):
                 full_text += chunk
                 await manager.send(
                     websocket,
@@ -111,7 +130,6 @@ async def handle_message(
                         payload=TextResponsePayload(
                             text=chunk,
                             is_partial=True,
-                            session_id=sid,
                         )
                     ),
                 )
@@ -121,12 +139,11 @@ async def handle_message(
                     payload=TextResponsePayload(
                         text=full_text,
                         is_partial=False,
-                        session_id=sid,
                     )
                 ),
             )
         except Exception:
-            logger.exception("LLM error for session %s", sid)
+            logger.exception("LLM error")
             await manager.send(
                 websocket,
                 ErrorMessage(

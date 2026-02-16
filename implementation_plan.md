@@ -52,7 +52,8 @@ ace/
 │   ├── config.py             # Configuration loading (config.yaml + .env)
 │   ├── connection.py          # WebSocket handler + ConnectionManager
 │   ├── protocol.py            # Message protocol models (Pydantic)
-│   ├── session_manager.py    # Orchestration loop + conversation history
+│   ├── database.py            # SQLite message persistence (aiosqlite)
+│   ├── session_manager.py    # Consciousness manager + orchestration loop
 │   ├── llm/
 │   │   ├── __init__.py
 │   │   ├── router.py         # LLM abstraction interface (Protocol-based)
@@ -128,37 +129,57 @@ You can open a browser, type a message, and have a streamed conversation with an
 
 ---
 
-## Phase 1: Memory
+## Phase 1: Memory — The Consciousness Model
 
-**Goal**: The assistant remembers things — within a session (working memory) and across sessions (long-term memory).
+**Goal**: The assistant has continuous memory and a consciousness model for context assembly.
 
 **Depends on**: Phase 0 complete
 
+### The Consciousness Model
+
+ACE drops the session concept entirely. The assistant has one continuous experience with the user — like a person, not a chatbot.
+
+- **Memory** — SQLite stores every message. The complete archive. Most is dormant.
+- **Total Consciousness** — items activated from memory by current context. A ranked list. Activation sources (will grow): recency, topic similarity, known facts, temporal patterns, explicit references, emotional state (Body), self-reflection (Inner Monologue).
+- **Consciousness** — the fixed-size LLM context window. Filled from top of Total Consciousness. Future: items get variable space based on attention rank.
+- **Unconsciousness** — activated items that didn't make it into Consciousness. Context shifts can promote them.
+- **The Body** — a separate space modeling emotional state (not messages, not facts — a continuous multi-dimensional vector). Bidirectional with consciousness: context shapes emotions, emotions shape context assembly. See general_specifications.md §9.3.
+- **Inner Monologue** — the assistant's metacognition. Self-reflection on its own behavior, priorities, and patterns. Another bidirectional input to Total Consciousness. See general_specifications.md §9.3.
+- **Consciousness Manager** — the core module that assembles consciousness. Currently simple recency-based. Future: dynamic space allocation, multi-source activation, variable-detail representations, emotional input, metacognition (likely post-Phase 3/audio).
+
 ### Tasks
 
-#### 1.1 Working Memory (Conversation Persistence)
-- [ ] Store conversation history in SQLite (not just in-memory)
-- [ ] Sessions persist across page refreshes
-- [ ] Session ID management (create new, resume existing)
-- [ ] Configurable context window (last N messages sent to LLM)
+#### 1.1 Memory Foundation + Simple Consciousness
+- [x] SQLite message persistence (one continuous stream, no sessions)
+- [x] Database module with init/close lifecycle (aiosqlite)
+- [x] Consciousness Manager (session_manager.py) — recency-based context assembly
+- [x] Configurable context window (`context_messages` in config.yaml)
+- [x] History protocol: client requests history on connect, server responds from DB
+- [x] Client reconnects and sees recent history (no session ID anywhere)
+- [x] `sessionId` removed from all protocol messages, client, and server
 
-#### 1.2 Long-Term Memory
-- [ ] SQLite schema for facts/preferences (`key`, `value`, `source`, `timestamp`)
-- [ ] Memory Manager module: `store(fact)`, `retrieve(query)`, `forget(key)`
+#### 1.2 Long-Term Memory (Fact Extraction)
+- [ ] SQLite schema for facts/preferences
 - [ ] Instruct the LLM (via system prompt) to extract and store notable facts
-- [ ] Inject relevant long-term memories into the prompt context
+- [ ] Inject relevant facts into consciousness assembly
 - [ ] User can ask "What do you remember about me?" and get a meaningful answer
 
-#### 1.3 Semantic Memory (Basic)
-- [ ] Add a vector store (ChromaDB — lightweight, embedded, Python-native)
+#### 1.3 Semantic Memory (Vector Search)
+- [ ] Add a vector store (ChromaDB or similar)
 - [ ] Embed conversation summaries and stored facts
-- [ ] On each user message, retrieve top-N relevant memories by similarity
-- [ ] Inject retrieved memories into prompt alongside conversation history
+- [ ] Semantic similarity as an activation source in Total Consciousness
+- [ ] Inject retrieved memories into consciousness assembly
 
-#### 1.4 Memory in the Orchestration Loop
-- [ ] Update the Session Manager: before calling the LLM, query the Memory Manager
-- [ ] After LLM response, check for facts to store (either via LLM extraction or explicit user instruction)
-- [ ] Conversation summaries generated periodically (e.g., every N turns) for long-term storage
+#### 1.4 Enhanced Consciousness Assembly
+- [ ] Multiple activation sources working together (recency + semantic + facts)
+- [ ] Conversation summaries generated periodically for long-term storage
+
+### Future Work (Post-Phase 3)
+- Dynamic consciousness space allocation (top item gets 30%, item #7 gets 5%)
+- Variable-detail representations (full text → summary → one-liner)
+- The Body (emotional state as consciousness input — role prompting approach)
+- Inner Monologue (metacognition as consciousness input)
+- These require audio/voice context and more experimentation to design well — deferred.
 
 ### Definition of Done
 You can close the browser, come back tomorrow, and the assistant knows your name, your preferences, and can reference past conversations. "Remember that I prefer dark mode" works. "What did we talk about yesterday?" returns something meaningful.
@@ -479,7 +500,7 @@ These don't need answers before starting Phase 0, but should be resolved before 
 | Question | Relevant Phase | Notes |
 |----------|---------------|-------|
 | Which search API for web search tool? | Phase 2 | SearXNG (self-hosted, free) vs. Tavily/Brave (API, paid). Depends on self-hosting appetite. |
-| How to handle LLM context window limits? | Phase 1 | Conversation summarization? Sliding window? Needs experimentation. |
+| ~~How to handle LLM context window limits?~~ | Phase 1 | **Decided: Consciousness model.** Recency-based sliding window (Phase 1.1). Semantic activation + summarization added in 1.3/1.4. Dynamic space allocation deferred to post-Phase 3. |
 | How are expert personas structured? | Phase 6+ | Deferred per spec. Needs design work before implementation. |
 | ~~SvelteKit or plain Svelte + Vite?~~ | Phase 0 | **Decided: Plain Svelte + Vite.** SvelteKit's routing and SSR are unnecessary for a SPA. |
 

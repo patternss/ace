@@ -106,3 +106,52 @@ The fix is simple: `npm run build` compiles the Svelte app into static files in 
 One important detail: the static mount only activates if `client/dist/` exists. During development (no build), the server starts fine without it. No crash, no error, no config flag needed.
 
 With this, Phase 0 is complete. ACE is a working chat app that can be built and run with two commands: `npm run build` and `uvicorn server.main:app`. Everything from here is enhancement — memory, tools, voice, and eventually the face.
+
+## Phase 1.1 — Memory Foundation + Simple Consciousness (2026-02-16)
+
+Phase 0's chatbot had a fundamental limitation: every page refresh wiped the conversation. The in-memory dict was fine for proving the pipeline, but ACE is supposed to be a companion, not a stateless chatbot. Phase 1.1 replaces the ephemeral session model with something fundamentally different.
+
+**The key decision: drop sessions entirely.** Traditional chatbots have sessions — you start a new conversation, it gets an ID, you can list past conversations. ACE doesn't work that way. The assistant has one continuous experience with the user, like a person. There's no "new conversation" button. You just talk, and the assistant remembers.
+
+This led to the **consciousness model**, a framework for how the assistant assembles context:
+
+- **Memory** is the complete SQLite archive. Every message ever exchanged. Most of it dormant at any given moment.
+- **Total Consciousness** is the set of items activated by current context — a ranked list assembled from multiple sources (recency, semantic similarity, known facts, temporal patterns). This is the "what's relevant right now" list.
+- **Consciousness** is what fits in the LLM context window — filled from the top of Total Consciousness. Future work will give top items more space (full text) and lower items less (summaries, one-liners).
+- **Unconsciousness** is activated items that didn't make it into the context window. A context shift can promote them.
+
+Phase 1.1 builds the simplest version: Memory (SQLite) + Consciousness Manager (load last N messages by recency). The consciousness model names are documented but the sophisticated parts — semantic search, fact injection, dynamic space allocation — are deferred. The architecture is designed for them; the code just doesn't implement them yet.
+
+**What changed technically:**
+- `server/database.py` (new) — owns the SQLite connection via aiosqlite. One table: `messages(id, role, content, created_at)`. No sessions table.
+- `server/main.py` — gained a lifespan context manager that initializes and closes the database.
+- `server/session_manager.py` — rewritten. The in-memory `_sessions` dict is gone. `handle_user_message()` no longer takes a session_id — it persists to DB, loads recent context, streams from LLM, persists the response. New `get_recent_history()` provides messages for client display on connect.
+- `server/protocol.py` — `session_id` removed from `TextInputPayload` and `TextResponsePayload`. New `history.request` (client → server) and `history.response` (server → client) message types.
+- `server/connection.py` — handles the new `HistoryRequest` message, removed all session_id references.
+- Client side: `websocket.ts` types updated (no sessionId, new history messages). Store sends `history.request` on connect, populates messages from the response. New `historyLoaded` flag disables input until history arrives. The ephemeral `crypto.randomUUID()` session ID is gone.
+
+**What we explicitly didn't do:** no migration framework, no ORM, no semantic search, no fact extraction, no variable-detail representations, no session listing UI. These are documented as future work in the implementation plan.
+
+## Design Decisions — Assistant Nature and Communication (2026-02-16)
+
+Two important design principles were established that shape ACE's entire personality and interaction model.
+
+**The assistant is always active.** ACE isn't a reactive tool that sleeps until spoken to. Between conversations, it can autonomously work on tasks: summarizing news on topics the user cares about, planning educational sessions, ordering food with tools, organizing notes. When it genuinely has nothing to do, it enters a low-activity sleep mode. It wakes on user interaction or when a task needs attention.
+
+**Three communication modes, always available.** Text, voice, and video (face) are not a linear upgrade path. Even after voice and the animated face are fully implemented, text remains a first-class mode. A user reviewing code at 2am doesn't want voice. Someone cooking dinner wants hands-free voice. A teaching session benefits from the face. The user switches freely; the assistant adapts its style to the mode. All three share the same consciousness and history — switching doesn't break context. This was codified in the spec as section 2.4.
+
+## Design Decisions — The Assistant's Inner Model (2026-02-16)
+
+A deeper question emerged from the "always active" design: if the assistant has continuous experience, what shapes that experience beyond memory?
+
+**Emotions.** The assistant has an emotional state — not as cosmetic personality but as something that structurally influences behavior. The key insight: emotions are a separate space from consciousness, called the **Body**. The Body runs alongside the consciousness model, feeding into it and being fed by it.
+
+Emotional state is multi-dimensional (not a single "happy/sad" label but a vector: engagement, warmth, curiosity, urgency, energy, frustration, etc.). It's bidirectional with consciousness: "we're in a hurry, get this email out!" triggers urgency, which shifts consciousness to focus on the email task — less attention to tangential items, different tool priorities. When the email is sent, the context has changed, the trigger is gone, and the urgency dissolves naturally. This is an important reframing of the "dampening" question — emotions don't need mechanical decay timers because they change when context changes. They're always *about* something.
+
+The Body can also be blocked from consciousness — emotional suppression/compartmentalization. The state still exists but doesn't influence context assembly. This is useful when emotions would be counterproductive ("I'm anxious about the deadline but I need to review this code calmly").
+
+The practical implementation path is **role prompting**: describe the emotional state in the system prompt and ask the model to let it shape tone, decisions, and priorities. LLMs are effective at adopting roles, so this is more tractable than trying to engineer genuine affect.
+
+**Inner Monologue.** The assistant's capacity for metacognition — thinking about its own thinking. "I've been spending a lot of time on this task, should I ask the user if it's still the priority?" This is distinct from the orchestration loop's normal processing — it's reflection on *how* it's processing. Like the Body, it's bidirectional with Total Consciousness: consciousness content triggers self-reflection, and self-reflection feeds back into consciousness assembly.
+
+**The full picture.** The consciousness model now has a richer set of inputs than just memory activation sources. Memory (recency, semantic, facts, temporal) feeds Total Consciousness. The Body (emotional state) feeds Total Consciousness. Inner Monologue (metacognition) feeds Total Consciousness. And consciousness content feeds back to both the Body and Inner Monologue. The architecture is designed for these inputs — they're documented as future work in the implementation plan, with open questions about persistence, representation, and interaction captured in general_specifications.md §9.3.

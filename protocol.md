@@ -13,14 +13,19 @@ Every message is a JSON object with a `type` field. Most messages also have a `p
 }
 ```
 
+## Design: No Sessions
+
+ACE has no session concept. There is one continuous memory stream per server — like a person, not a chatbot. The client connects, requests recent history, and continues the conversation. Refreshing the page or reconnecting restores the same history.
+
 ## Message Types
 
 ### Client → Server
 
 | Type | Payload | Status |
 |------|---------|--------|
-| `user.input.text` | `{ text, sessionId }` | Implemented (Phase 0.2) |
-| `user.input.audio` | `{ transcript?, audioChunk?, sessionId }` | Defined |
+| `user.input.text` | `{ text }` | Implemented (Phase 0.2, updated 1.1) |
+| `history.request` | _(none)_ | Implemented (Phase 1.1) |
+| `user.input.audio` | `{ transcript?, audioChunk? }` | Defined |
 | `client.state.update` | `{ deviceId, capabilities, activeView }` | Defined |
 | `session.handoff.request` | `{ targetDeviceId }` | Defined |
 | `tool.result` | `{ toolCallId, result, error? }` | Defined |
@@ -29,7 +34,8 @@ Every message is a JSON object with a `type` field. Most messages also have a `p
 
 | Type | Payload | Status |
 |------|---------|--------|
-| `assistant.response.text` | `{ text, isPartial, sessionId }` | Implemented (Phase 0.2) |
+| `assistant.response.text` | `{ text, isPartial }` | Implemented (Phase 0.2, updated 1.1) |
+| `history.response` | `{ messages: [{ role, content }, ...] }` | Implemented (Phase 1.1) |
 | `assistant.response.audio` | `{ audioChunk, format }` | Defined |
 | `assistant.action.display` | `{ contentType, contentUrl, layout }` | Defined |
 | `assistant.action.annotate` | `{ action, target, style }` | Defined |
@@ -46,9 +52,22 @@ Every message is a JSON object with a `type` field. Most messages also have a `p
 | `connection.pong` | _(none)_ | Implemented (Phase 0.2) |
 | `error` | `{ code, message, context? }` | Implemented (Phase 0.2) |
 
+## History Flow
+
+On connect (or reconnect), the client sends `history.request`. The server responds with `history.response` containing recent messages from the SQLite database. The client populates the message list and enables input.
+
+```
+Client                          Server
+  │                               │
+  │──── history.request ────────►│
+  │                               │  (load recent messages from DB)
+  │◄─── history.response ────────│
+  │     { messages: [...] }       │
+```
+
 ## Field Naming
 
-Wire format uses **camelCase** (`sessionId`, `isPartial`). The Python server uses snake_case internally and converts automatically via Pydantic aliases.
+Wire format uses **camelCase** (`isPartial`). The Python server uses snake_case internally and converts automatically via Pydantic aliases.
 
 ## Error Codes
 

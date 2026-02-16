@@ -7,4 +7,5 @@ server:
 llm:
   provider: "ollama"
   model: "qwen3:14b"
+  context_messages: 50
   # host: "http://localhost:11434"  # uncomment to override default

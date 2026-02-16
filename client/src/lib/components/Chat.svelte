@@ -46,7 +46,9 @@
         : "#ef4444",
   );
 
-  const inputDisabled = $derived(chatState.connectionState !== "connected");
+  const inputDisabled = $derived(
+    chatState.connectionState !== "connected" || !chatState.historyLoaded,
+  );
   const sendDisabled = $derived(inputDisabled || chatState.isStreaming);
 </script>
 
@@ -66,7 +68,11 @@
   <form class="input-bar" onsubmit={(e) => { e.preventDefault(); send(); }}>
     <input
       type="text"
-      placeholder={inputDisabled ? "Disconnected..." : "Type a message..."}
+      placeholder={chatState.connectionState !== "connected"
+        ? "Disconnected..."
+        : !chatState.historyLoaded
+          ? "Loading..."
+          : "Type a message..."}
       bind:value={inputText}
       onkeydown={handleKeydown}
       disabled={inputDisabled}

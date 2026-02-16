@@ -29,12 +29,14 @@ PROJECT_ROOT = Path(__file__).parent.parent
 class ServerConfig:
     host: str
     port: int
+    data_dir: str = "data"
 
 
 @dataclass(frozen=True)
 class LLMConfig:
     provider: str
     model: str
+    context_messages: int = 50
     host: str = ""
     api_key: str = ""
 
@@ -68,14 +70,17 @@ def load_config() -> Config:
     api_key = os.environ.get("GEMINI_API_KEY", "")
     llm_host = llm_raw.get("host", os.environ.get("OLLAMA_HOST", ""))
 
+    server_raw = raw["server"]
     return Config(
         server=ServerConfig(
-            host=raw["server"]["host"],
-            port=raw["server"]["port"],
+            host=server_raw["host"],
+            port=server_raw["port"],
+            data_dir=server_raw.get("data_dir", "data"),
         ),
         llm=LLMConfig(
             provider=llm_raw["provider"],
             model=llm_raw["model"],
+            context_messages=llm_raw.get("context_messages", 50),
             host=llm_host,
             api_key=api_key,
         ),

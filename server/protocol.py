@@ -4,8 +4,10 @@ WebSocket message protocol models.
 Defines the JSON message format for client-server communication.
 All messages have a 'type' field and a 'payload' field.
 
-Phase 0.2 implements: user.input.text, assistant.response.text,
+Implemented: user.input.text, assistant.response.text,
+history.request, history.response,
 connection.ping, connection.pong, error.
+
 Full protocol defined in protocol.md at project root.
 
 Usage:
@@ -14,9 +16,7 @@ Usage:
 
     # Create an outgoing message:
     msg = AssistantResponseText(
-        payload=TextResponsePayload(
-            text="Hello", is_partial=False, session_id="s1"
-        )
+        payload=TextResponsePayload(text="Hello", is_partial=False)
     )
     raw = msg.model_dump_json(by_alias=True)
 """
@@ -42,7 +42,6 @@ class CamelModel(BaseModel):
 
 class TextInputPayload(CamelModel):
     text: str
-    session_id: str
 
 
 class UserInputText(BaseModel):
@@ -54,18 +53,35 @@ class ConnectionPing(BaseModel):
     type: Literal["connection.ping"] = "connection.ping"
 
 
+class HistoryRequest(BaseModel):
+    type: Literal["history.request"] = "history.request"
+
+
 # --- Outgoing messages (server -> client) ---
 
 
 class TextResponsePayload(CamelModel):
     text: str
     is_partial: bool
-    session_id: str
 
 
 class AssistantResponseText(BaseModel):
     type: Literal["assistant.response.text"] = "assistant.response.text"
     payload: TextResponsePayload
+
+
+class HistoryMessage(CamelModel):
+    role: str
+    content: str
+
+
+class HistoryResponsePayload(CamelModel):
+    messages: list[HistoryMessage]
+
+
+class HistoryResponse(BaseModel):
+    type: Literal["history.response"] = "history.response"
+    payload: HistoryResponsePayload
 
 
 class ErrorPayload(BaseModel):
@@ -88,6 +104,7 @@ class ConnectionPong(BaseModel):
 _INCOMING_TYPES: dict[str, type[BaseModel]] = {
     "user.input.text": UserInputText,
     "connection.ping": ConnectionPing,
+    "history.request": HistoryRequest,
 }
 
 
@@ -100,7 +117,9 @@ class ProtocolError(Exception):
         super().__init__(message)
 
 
-def parse_incoming(raw: str) -> UserInputText | ConnectionPing:
+def parse_incoming(
+    raw: str,
+) -> UserInputText | ConnectionPing | HistoryRequest:
     """Parse a raw JSON string into a typed incoming message.
 
     Args:
